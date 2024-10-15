@@ -1,1 +1,178 @@
-\chapter{Test}
+\chapter{Sampling and Monte Carlo}
+
+The state space \(S\subseteq \R^d\) measurable with some \(\mu(dx)=\mu(x)dx\) absolutely continuous 
+probability measure on \(S\) with \( \mu(x)>0, \mu(x)=\frac{1}{z}e^{-U(x)}\) 
+for some normalizing constant \(z\in(0,\infty)\), usually unknown.
+
+Many examples: Boltzmann-Gibs, in statistics exponential families.
+
+In physics \(U:S\to\R\) is called the \dhighlight{energy}, which we adopt. This is usually know explicitly.
+
+\dhighlight{Goals}:
+\begin{enumerate}
+    \item \highlight{Sampling:} Simulate a approximate sample from \(\mu\)
+    \item \highlight{Integral estimation:} Compute \(\vartheta=\int fd\mu\) approximately.\marginnote{\(f\) is sometimes called a observable} For \(f=1_B,\vartheta=\mu(B)\)
+\end{enumerate}
+
+There is a connection between 1. and 2.: For samples \(X_1,\dots,X_n\) i.i.d. samples of \(\mu\), then 
+\[\hat{\vartheta}_n=\frac{1}{n}\sum_{i=1}^n f(X_i)\] is an unbiased estimator of \(\vartheta\).
+
+\section{Sampling (without Markov chains)}
+
+\subsection{Direct simulation only for special models}
+
+\begin{example}
+    For \(S=\R^1\), \(F(c)=\mu((-\infty,c])\). Consider the generalized inverse \(F^{-1}(u)=\inf\{c\in\R: f(c)\geq u\}\).
+Then draw a uniform variable \(u\sim\text{Unif}((0,1))\), then \(F^{-1}(u)\sim\mu\). This is called the \dhighlight{inversion method}.
+
+\end{example}
+
+\begin{remark}
+    \(\mu=\cN(0,1)\implies F(c)=\frac{1}{\sqrt{2\pi}}\int_{-\infty}^c e^{-\frac{-x^2}{2}}dx\), therefore we can't use \(F\), since it has no explicit representation.
+\end{remark}
+
+\begin{example}
+   \(S=\R^2,\mu=\cN(0,I_2)\) with \(\mu(dx)=\frac{1}{2\pi}e^{\frac{-|x|^2}{2}}dx \stackrel{\text{polar}}{=}\underbrace{\frac{1}{2\pi}e^{-\frac{r^2}{2}}rdrd\phi}_{\nu\otimes \text{Unif}(0,2\pi)}\)
+    with \[\nu(r)=re^{\frac{-r^2}{2}},r\in(0,\infty)\]
+    The distribution function \(F(c)=\int_0^c \nu(r)dr = e^{-\frac{c^2}{2}}\), which is explicit!
+    
+    Algorithm:
+    \begin{enumerate}
+        \item Sample \((u_1,u_2)\)
+        \item \(r=F^{-1}(u_1),\varphi=2\pi u_2\)
+        \item \(x=(r\cos(\varphi),r\sin(\varphi))\sim\cN(0,I_2)\)
+        \item Then \(x_1,x_2\) are independent and normally distributed
+    \end{enumerate}
+    This is called the Box-Muller method
+\end{example}
+
+\begin{example}
+    \(\cN(m,C),m\in\R^d,C\in\R^{d\times d}\) symmetric pos. definite. 
+\end{example}
+
+\begin{remark}
+    \(z\sim\cN(0,I_d),\sigma\in\R^{d\times d}\implies \sigma Z+m\sim\cN(m,\sigma\sigma^d)\)
+\end{remark}
+
+Algorithm:\marginnote{This can be used to sample brownian bridges and brownian motions}
+\begin{itemize}
+    \item Find \(\sigma\in\R^{d\times d}\) s.t. \(\sigma\sigma^\intercal=C\) by Cholesky.
+    \item Sample \(z_1,\dots,z_d\sim \cN(0,1)\) via Box-Muller 
+    \item \(x=\sigma z+m\sim\cN(m,C)\)
+\end{itemize}
+
+\subsection{Acceptance-Rejection}
+
+Suppose \(\mu(dx)\propto\rho(x) \nu(dx)\) for some \textit{nice} \(\nu\), i.e. we can sample from \(\nu\).
+
+\dhighlight{Assumption:} \(\exists C\in (0,\infty): \rho(x)\leq C \nu-\as\)
+
+Algorithm: Repeat
+\begin{enumerate}
+    \item Sample \(x\sim \nu,u\sim\text{Unif}(0,1)\) 
+    \item until \(u\leq \rho(x)/C\)
+    \item return \(x\)
+\end{enumerate}
+
+\highlight{Model} \(x_n\sim\nu,U_n\sim\text{Unif}(0,1)\) all independent. Output \(x_T,T=\min\{n\in\N U_n\leq \frac{\rho(X_n)}{C}\}\)
+
+\begin{theorem}
+    \begin{enumerate}
+        \item \(T\sim \text{Geom}(p),p=\frac{1}{C}\int\rho d\nu\)
+        \item \(X_T\sim \mu\)
+    \end{enumerate}
+\end{theorem}
+
+\begin{proof}
+    Exercise.
+\end{proof}
+
+\dhighlight{Problem:} \(\bE(T)=\frac{1}{p}=\frac{C}{\int\rho d\nu}\) will often be very large.
+
+\begin{example}
+    \(\nu,\mu\) are i.i.d. product measures on \(\R^d\)
+    \[\rho(x_1,\dots,x_d)=\prod_{i=1}^d f(x_i)\]
+    where \(f\) is the one-dimensional density.
+    \(C\sim A^d\) for some \(A>1\).
+\end{example}
+
+\section{Monte Carlo Methods}
+
+We want to approximate \(\vartheta=\int fd\mu\)
+
+\dhighlight{Numerical integration:} Curse of dimension, we need some regularity to get good bounds, \dots
+
+\dhighlight{Classical Monte Carlo:} \[\hat{\vartheta}_n=\frac{1}{n}\sum_{i=1}^n f(X_i)\]
+for \(X_i\sim \mu\) i.i.d.. We know:
+\begin{itemize}
+    \item \(\bE(\hat{\vartheta}_n)=\vartheta\) 
+    \item \(\text{Var}(\hat{V\vartheta}_n)=\frac{1}{n}\text{Var}_\mu(f)\)
+    \item Conecentration inequalies:, like the Hoeffding inequality \[\bP(|\hat{\vartheta}_n-\vartheta|\geq \epsilon)\leq 2\epsilon^{-\frac{n\epsilon^2}{2\sup |f|^2}}\]
+\end{itemize}
+
+But: this requires independent samples from \(\mu\), usually not available.
+
+\dhighlight{Importance Sampling:} \(d\mu\propto \rho d\nu\)
+\[\vartheta=\int fd\mu=\frac{\int f\rho d\nu}{\int\rho d\nu}\]
+\marginnote{But then we are estimating a term in the denominator \dots}
+Now we can approximate \(\vartheta\) by using Monte Carlo for both integrals.
+\begin{eqnarray*}
+    \stackrel{\text{LLN}}{\approx}\frac{\frac{1}{n}\sum_{i=1}^n f(X_i)\rho(X_i)}{\frac{1}{n}\sum_{i=1}^n \rho(X_i)}=\hat{\vartheta}_n
+\end{eqnarray*}\marginnote{We don't have to choose the same number of samples, but we tipically do}
+where the \(X_i\) are independent. 
+\(\rho(X_i)\) are also called \dhighlight{importance weights}.
+
+\dhighlight{Problems:} 
+\begin{itemize}
+    \item In general \(\bE(\hat{\vartheta}_n)\neq\vartheta\), which means we have a bias, which might be difficult to control
+    \item Weight degeneracy: often \(\rho(X_i)\approx 0\) for most samples (except if \(\nu,\mu\) are close) \(\implies\) variance of \(\hat{\vartheta}_n\) can be large 
+\end{itemize}
+
+\section{Markov Chain Monte Carlo}
+
+\begin{itemize}
+    \item Find a transition kernel \(\pi(x,dy)\) on \(S\) s.t. \(\mu\pi=\mu\), i.e. \marginnote{There are many ways to find such a kernel, but how do we find a kernel that rapidly converges}
+    \begin{equation}\label{eq:mcmc_invariance}\int \mu(dx)\pi(x,B)=\mu(B)\end{equation} for measurable \(B\)
+    \item Simulate a Markov Chain \(X_0,X_1,\dots,,X_n\) with given initial distribution \(\nu\) and transition kernel \(\pi\)
+    \item Under weak assumptions: \[\text{Law}(X_n)=\nu\pi^n\stackrel{n\to\infty}{\to} \mu\] which means \dhighlight{convergences to stationarity}
+    \item  \dhighlight{ergodicty} \(\hat{\vartheta}_n = \frac{1}{n}\sum_{i=b}^{b+n} f(X_i)\to\int fd\mu \bP\as\) \marginnote{The \(b\), called \dhighlight{burn-in-time} yields a better estimator}
+\end{itemize}
+
+\dhighlight{Idea:} \(n\) sufficiently large \(\implies X_n\) is approximately sample from \(\mu\) and \(\hat{\vartheta}_n\approx \vartheta\).
+
+\dhighlight{Question:} What does \textit{sufficiently large} mean?
+
+Can we get quantitative bounds for fixed \(n\)? \marginnote{That means non-asymptotic bounds}
+
+This brings us to mixing times, since they measure how long it takes to converge to the stationary distribution.
+
+How can we find \(\pi\) with invariant measure \(\mu\)? One possibility is called \dhighlight{Detailed balance}:
+
+\begin{lemma}\label{lem:1.2} %start in x and does one step in the direction of y
+    \marginnote{This makes it easier, since we only have to make the expression symmetric!}
+    \begin{equation}\label{detailed_balance}\mu(dx)\pi(x,dy)=\mu(dy)\pi(y,dx)\end{equation}
+    i.e. for all measurable \(A,B:\) \[\int_A \mu(dx)\pi(x,B)=\int_B \mu(dy)\pi(y,A)\]
+    Then \(\mu\) is invariant for \(\pi\)
+\end{lemma}
+
+\begin{proof}
+    Choose \(A=S\) the whole space.
+\end{proof}
+
+\begin{remark}
+    \begin{enumerate}
+        \item (\ref{detailed_balance}) is sufficient, but not necessary, for invariance. E.g. \(S=\R^2\approxeq \C\) with \(X_{n+1}=e^{i\vartheta}X_n\) for \(\vartheta\in\R\implies \mu=\cN(0,I_2)\) is invariant. (\ref{detailed_balance}) holds only for \(\vartheta\in\pi\Z\) 
+        \item Suppose \(X_n\) is Markov chain with transition kernel \(\pi\), \(X_0\sim\mu\). Then (\ref{eq:mcmc_invariance}) \(\iff\) \begin{equation}\label{eq:stationarity}
+            \text{Law}(X_n,X_{n+1},\dots) =\text{Law}(X_0,X_1,\dots)\forall n
+        \end{equation} 
+        and (\ref{detailed_balance}) \(\iff\)
+        \begin{equation}\label{eq:reversability}
+            \text{Law}(X_n,X_{n-1},\dots) =\text{Law}(X_0,X_1,\dots)\forall n
+        \end{equation} 
+        \item (\ref{eq:reversability}) is much stronger than (\ref{eq:stationarity})
+    \end{enumerate}
+\end{remark}
+
+
+
+
